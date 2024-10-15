@@ -16,6 +16,7 @@ ATTR_CODES = {
     '%y': '%{type_line}',
     '%p': '%{power}',
     '%t': '%{toughness}',
+    '%d': '%{defense}',
     '%l': '%{loyalty}',
     '%o': '%{oracle_text}',
     '%f': '%{flavor_text}',
@@ -50,17 +51,33 @@ def print_data(data_list, format_list):
     print_lines = []
     for data in data_list:
         # parse a specific DFC face if specified
-        if PRINT_FLAGS['dfc-default-face'] is not None and data.get('card_faces') is not None:
-            data = data.get('card_faces')[PRINT_FLAGS['dfc-default-face']]
+        # for k in data:
+        #     print(k, ": ",data.get(k))
+        if data.get('card_faces') is not None:
+            if PRINT_FLAGS['dfc-default-face'] is not None:
+                data = data.get('card_faces')[PRINT_FLAGS['dfc-default-face']]
+                elements = [data]
+            else:
+                front = data.get('card_faces')[0]
+                back = data.get('card_faces')[1]
+                elements = [front, back]
+        else:
+            elements = [data]
         # populate the format string with attributes from the data
         # whenever a format string cannot be fully populated, try the next 'else' string
         formats_to_attempt = format_list
-        while formats_to_attempt:
-            results = get_print_lines_from_data(data, formats_to_attempt[0], percent_placeholder, column_placeholder)
-            if results:
-                break
-            formats_to_attempt = formats_to_attempt[1:]
-        print_lines += results
+        card_lines = []
+        for data in elements:
+            if len(card_lines) > 0:
+                card_lines[-1] = ['----------']
+            while formats_to_attempt:
+                results = get_print_lines_from_data(data, formats_to_attempt[0], percent_placeholder, column_placeholder)
+                if results:
+                    break
+                formats_to_attempt = formats_to_attempt[1:]
+            for e in results:
+                card_lines.append(e)
+        print_lines += card_lines
 
     if not print_lines:
         return
@@ -72,6 +89,7 @@ def print_data(data_list, format_list):
         for i in range(num_columns):
             column_widths[i] = max(column_widths[i], len(row[i]))
 
+    print()
     # pad each column with whitespace and concat them together to print a row
     for row in print_lines:
         padded_row = ''
@@ -79,6 +97,7 @@ def print_data(data_list, format_list):
             padded_column = row[i].ljust(column_widths[i])
             padded_row += padded_column
         print(padded_row.rstrip())
+    print("Results found:", len(data_list))
 
 
 def get_print_lines_from_data(data, format_string, percent_placeholder, column_placeholder):
@@ -130,8 +149,23 @@ def substitute_attributes_for_values(print_line, data):
             attribute_value = get_attribute_value(attribute_name, data)
             # if any attribute value is None, do not print anything on this line
             if attribute_value is None:
-                return []
-            print_line = print_line.replace('%{' + attribute_name + '}', str(attribute_value))
+                if attribute_name == "loyalty":
+                    print_line = print_line.replace('%{' + attribute_name + '}', "<noLoyalty>").replace('| <noLoyalty>', '').replace('<noLoyalty>', '')
+                elif attribute_name == "defense":
+                    print_line = print_line.replace('%{' + attribute_name + '}', "<noDefense>").replace('| <noDefense> ', '').replace('<noDefense>', '')
+                elif attribute_name == "power":
+                    print_line = print_line.replace('%{' + attribute_name + '}', "<noPow>").replace('| <noPow>/<noTou> ', '').replace('<noPow>/<noTou> ', '')
+                elif attribute_name == "toughness":
+                    print_line = print_line.replace('%{' + attribute_name + '}', "<noTou>").replace('| <noPow>/<noTou> ', '').replace('<noPow>/<noTou> ', '')
+                else:
+                    return []
+            else:
+                # If the card has no CMC (land), remove the field from the output
+                if attribute_name == "mana_cost" and str(attribute_value) == '':
+                    print_line = print_line.replace('%{' + attribute_name + '}', "<noCMC>").replace('| <noCMC> ', '').replace('<noCMC>', '')
+                else:
+                    print_line = print_line.replace('%{' + attribute_name + '}', str(attribute_value))
+
 
     # even if only one line is printed, return it in a list so that it can be iterated in earlier functions
     print_lines.append(print_line)

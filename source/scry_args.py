@@ -24,7 +24,9 @@ def parse_args(args):
 
     # default formatting
     if not formatting:
-        formatting.append('%{name} %| %{type_line} %| %{mana_cost}')
+        # formatting.append('%{name} %| %{type_line} %| %{mana_cost}')
+        formatting.append('%{name} | %{type_line} | %{mana_cost} | %{power}/%{toughness} | %{defense} | %{loyalty} \n%{oracle_text}\n')
+
 
     return query, formatting
 
