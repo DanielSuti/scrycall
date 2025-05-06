@@ -1,11 +1,12 @@
 import time
 
-from scry_data import get_json_data_from_url
+from scry_data import get_json_data_from_url, get_json_rules_data_from_url
 
 
 PRINT_FLAGS = {
     'dfc-default-face': None,
     'dfc-smart-parse': True,
+    'notes-rules': False,
 }
 
 # shortcuts for printing card attributes in the format string
@@ -14,12 +15,13 @@ ATTR_CODES = {
     '%m': '%{mana_cost}',
     '%c': '%{cmc}',
     '%y': '%{type_line}',
-    '%p': '%{power}',
-    '%t': '%{toughness}',
-    '%d': '%{defense}',
-    '%l': '%{loyalty}',
+    '%p': '%{power}',       # for creatures only
+    '%t': '%{toughness}',   # for creatures only
+    '%d': '%{defense}',     # for battles only
+    '%l': '%{loyalty}',     # for planeswalkers only
     '%o': '%{oracle_text}',
     '%f': '%{flavor_text}',
+    '%r': '%{rules_text}',
 }
 
 
@@ -51,8 +53,6 @@ def print_data(data_list, format_list):
     print_lines = []
     for data in data_list:
         # parse a specific DFC face if specified
-        # for k in data:
-        #     print(k, ": ",data.get(k))
         if data.get('card_faces') is not None:
             if PRINT_FLAGS['dfc-default-face'] is not None:
                 data = data.get('card_faces')[PRINT_FLAGS['dfc-default-face']]

@@ -10,10 +10,10 @@ def main():
 
     # query: string you would type in the search bar at scryfall.com
     # formatting: list of format strings that determine how data is printed
-    query, formatting = parse_args(sys.argv[1:])
+    query, formatting, format_rules = parse_args(sys.argv[1:])
 
     if query:
-        cards = get_cards_from_query(query)
+        cards = get_cards_from_query(query, format_rules)
         print_data(cards, formatting)
 
     return 0

@@ -1,20 +1,52 @@
-from scry_api import get_api_url_from_query, get_api_data_from_url
+from scry_api import get_api_url_from_query, get_api_data_from_url, get_rules_data_from_url
 from scry_cache import load_url_from_cache, write_url_to_cache
 from scry_cache import CACHE_FLAGS
 
 
-def get_cards_from_query(query):
+def get_cards_from_query(query, FORMAT_RULES=False):
     url = get_api_url_from_query(query)
-    card_list = get_json_data_from_url(url)
+    card_list = get_json_data_from_url(url, FORMAT_RULES=FORMAT_RULES)
     return card_list
 
 
-def get_json_data_from_url(url):
+def get_json_data_from_url(url, FORMAT_RULES=False):
+
+    # "yyyy-mm-dd" -> "dd-mm-yyyy"
+    def format_date(date: str):
+        year, month, day = date.split('-')
+        return f"{day}-{month}-{year}"
+
     json_data = load_url_from_cache(url)
     if json_data is None:
         if CACHE_FLAGS['cache-only']:
             return []
         json_data = get_api_data_from_url(url)
+        json_data = parse_json_data_into_list(json_data)
+        if FORMAT_RULES:
+            for card in json_data:
+                rules_formated = ""
+                rules = get_json_rules_data_from_url(card["rulings_uri"])
+                for rule in rules:
+                    rules_formated += (
+                        "\n++++++++++\n" + rule["object"] + " | "
+                        + format_date(rule["published_at"]) + " | " + rule["source"]
+                        + '\n' + rule["comment"]
+                    )
+                if card.get('card_faces') is not None:
+                    for face_idx in range(len(card.get('card_faces')) - 1):
+                        card["card_faces"][face_idx]["rules_text"] = ""
+                    card["card_faces"][-1]["rules_text"] = rules_formated
+                else:
+                    card["rules_text"] = rules_formated
+        write_url_to_cache(url, json_data)
+    return json_data
+
+def get_json_rules_data_from_url(url):
+    json_data = load_url_from_cache(url)
+    if json_data is None:
+        if CACHE_FLAGS['cache-only']:
+            return []
+        json_data = get_rules_data_from_url(url)
         json_data = parse_json_data_into_list(json_data)
         write_url_to_cache(url, json_data)
     return json_data

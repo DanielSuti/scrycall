@@ -25,10 +25,12 @@ def parse_args(args):
     # default formatting
     if not formatting:
         # formatting.append('%{name} %| %{type_line} %| %{mana_cost}')
-        formatting.append('%{name} | %{type_line} | %{mana_cost} | %{power}/%{toughness} | %{defense} | %{loyalty} \n%{oracle_text}\n')
+        format = '%{name} | %{type_line} | %{mana_cost} | %{power}/%{toughness} | %{defense} | %{loyalty} \n%{oracle_text}'
+        if PRINT_FLAGS['notes-rules']:
+            format += '%{rules_text}'
+        formatting.append(format + '\n')
 
-
-    return query, formatting
+    return query, formatting, PRINT_FLAGS["notes-rules"]
 
 
 def parse_flag(arg, formatting):
@@ -61,6 +63,11 @@ def parse_flag(arg, formatting):
         if PRINT_FLAGS['dfc-default-face'] is not None:
             raise 'dfc default face already set'
         PRINT_FLAGS['dfc-default-face'] = 1
+        return True
+    elif arg == '--rules':
+        # show notes and rules information
+        PRINT_FLAGS['notes-rules'] = True
+        CACHE_FLAGS['ignore-cache'] = True
         return True
     elif arg == '--cache-only':
         # do not query the api, only look at the cache
