@@ -160,6 +160,9 @@ def substitute_attributes_for_values(print_line, data):
                 else:
                     return []
             else:
+                if attribute_name == "oracle_text" and attribute_value == '':
+                    attribute_value = "(empty oracle text)"
+
                 # If the card has no CMC (land), remove the field from the output
                 if attribute_name == "mana_cost" and str(attribute_value) == '':
                     print_line = print_line.replace('%{' + attribute_name + '}', "<noCMC>").replace('| <noCMC> ', '').replace('<noCMC>', '')
